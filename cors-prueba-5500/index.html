@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Prueba CORS 4200</title>
+</head>
+<body>
+<h2>Prueba CORS - Origen autorizado</h2>
+<pre id="resultado">Consultando...</pre>
+
+<script>
+    fetch("http://localhost:8081/api/v1/reportes/ventas-por-categoria")
+        .then(async respuesta => {
+            const datos = await respuesta.json();
+            document.getElementById("resultado").textContent =
+                "HTTP " + respuesta.status + "\n" +
+                JSON.stringify(datos, null, 2);
+        })
+        .catch(error => {
+            document.getElementById("resultado").textContent =
+                "ERROR CORS: " + error;
+        });
+</script>
+</body>
+</html>
