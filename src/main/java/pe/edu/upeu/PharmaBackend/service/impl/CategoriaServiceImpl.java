@@ -14,7 +14,7 @@ import pe.edu.upeu.PharmaBackend.exception.ReglaNegocioException;
 import pe.edu.upeu.PharmaBackend.repository.CategoriaRepository;
 import pe.edu.upeu.PharmaBackend.service.service.CategoriaService;
 
-import java.util.Optional;
+import java.util.List;
 
 @Service
 public class CategoriaServiceImpl implements CategoriaService {
@@ -94,10 +94,17 @@ public class CategoriaServiceImpl implements CategoriaService {
     @Transactional(readOnly = true)
     @Cacheable(cacheNames = "categorias", key = "'todas'")
     public Iterable<CategoriaResponseDTO> readAll() {
-        return categoriaRepository.findAll()
+        long inicio = System.currentTimeMillis();
+        LOG.info("Inicio listar categorias");
+
+        List<CategoriaResponseDTO> resultado = categoriaRepository.findAll()
                 .stream()
                 .map(this::convertirResponse)
                 .toList();
+
+        LOG.info("Fin listar categorias | filas={} | duracionMs={}",
+                resultado.size(), System.currentTimeMillis() - inicio);
+        return resultado;
     }
 
     private CategoriaResponseDTO convertirResponse(Categoria categoria){
