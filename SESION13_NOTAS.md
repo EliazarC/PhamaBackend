@@ -55,3 +55,23 @@ Para iniciar en desarrollo:
 - Comprobar /actuator/health sin token, /actuator/metrics como admin y como vendedor.
 - Repetir con perfil prod y variables DB_URL, DB_USERNAME, DB_PASSWORD, JWT_SECRET y FRONTEND_ORIGINS.
 - Guardar capturas reales y registrar resultados en la tabla de evidencias antes/después. No se inventan tamaños, tiempos ni resultados.
+
+## Ejecución con perfil de producción (PowerShell)
+
+En una terminal separada, configura las variables para el perfil productivo. Genera una clave JWT nueva para producción; no reutilices la clave de desarrollo:
+
+```powershell
+$env:SPRING_PROFILES_ACTIVE = "prod"
+$env:DB_URL = "jdbc:oracle:thin:@//localhost:1522/FREEPDB1"
+$env:DB_USERNAME = "PHARMADB"
+$env:DB_PASSWORD = "TU_CLAVE_ORACLE"
+$bytes = New-Object byte[] 32
+[System.Security.Cryptography.RandomNumberGenerator]::Fill($bytes)
+$env:JWT_SECRET = [Convert]::ToBase64String($bytes)
+$env:FRONTEND_ORIGINS = "http://localhost:8081"
+
+.\mvnw.cmd clean package -DskipTests
+java -jar target\PhamaBackend-0.0.1-SNAPSHOT.jar
+```
+
+No guardes los valores de las variables en archivos versionados. La clave JWT aleatoria se genera localmente en esa terminal y no debe copiarse al repositorio.
