@@ -39,7 +39,7 @@ public class CorsConfig implements WebMvcConfigurer {
                         "Authorization",
                         "Origin"
                 )
-                .exposedHeaders("Location")
+                .exposedHeaders("Location", "X-Request-Id")
                 .allowCredentials(true)
                 .maxAge(3600);
     }
