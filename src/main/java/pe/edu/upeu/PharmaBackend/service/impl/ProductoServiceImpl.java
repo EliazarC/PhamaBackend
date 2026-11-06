@@ -88,7 +88,7 @@ public class ProductoServiceImpl implements ProductoService {
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(cacheNames = "productos", key = "'id-' + #aLong")
+    @Cacheable(cacheNames = "productos", key = "'id-' + #p0")
     public ProductoResponseDTO read(Long aLong) {
         Producto producto = productoRepository.findById(aLong)
                 .orElseThrow(()->
