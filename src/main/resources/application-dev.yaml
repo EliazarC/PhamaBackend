@@ -20,6 +20,8 @@ springdoc:
   api-docs:
     enabled: true
 logging:
+  pattern:
+    console: "%d{HH:mm:ss.SSS} %-5level [%X{requestId}] %logger{36} - %msg%n"
   level:
     pe.edu.upeu.PharmaBackend: DEBUG
 app:
