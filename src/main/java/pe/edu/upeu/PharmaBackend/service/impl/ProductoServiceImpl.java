@@ -4,9 +4,13 @@ package pe.edu.upeu.PharmaBackend.service.impl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.transaction.annotation.Transactional;
+import pe.edu.upeu.PharmaBackend.dto.PaginaResponseDTO;
 import pe.edu.upeu.PharmaBackend.dto.ProductoRequestDTO;
 import pe.edu.upeu.PharmaBackend.dto.ProductoResponseDTO;
 import pe.edu.upeu.PharmaBackend.entity.Categoria;
@@ -119,6 +123,50 @@ public class ProductoServiceImpl implements ProductoService {
                 .stream()
                 .map(this::convertirResponse)
                 .toList();
+    }
+
+
+    @Override
+    @Transactional(readOnly = true)
+    @Cacheable(cacheNames = "productos", key = "#p0 + '-' + #p1 + '-' + #p2 + '-' + #p3")
+    public PaginaResponseDTO<ProductoResponseDTO> listar(int pagina, int tamanio,
+                                                          String ordenarPor, String direccion) {
+        if (pagina < 0) {
+            throw new ReglaNegocioException("La página no puede ser negativa");
+        }
+        if (tamanio < 1 || tamanio > 500) {
+            throw new ReglaNegocioException("El tamaño de página debe estar entre 1 y 500");
+        }
+
+        java.util.Set<String> camposPermitidos = java.util.Set.of(
+                "id", "nombre", "precio", "stock", "estado", "fechaCreacion", "fechaModificacion"
+        );
+        String campo = (ordenarPor == null || ordenarPor.isBlank()) ? "nombre" : ordenarPor.trim();
+        if (!camposPermitidos.contains(campo)) {
+            throw new ReglaNegocioException("Campo de ordenamiento no permitido: " + campo);
+        }
+
+        String sentido = (direccion == null || direccion.isBlank()) ? "asc" : direccion.trim();
+        if (!sentido.equalsIgnoreCase("asc") && !sentido.equalsIgnoreCase("desc")) {
+            throw new ReglaNegocioException("La dirección debe ser asc o desc");
+        }
+
+        Sort sort = sentido.equalsIgnoreCase("desc")
+                ? Sort.by(campo).descending()
+                : Sort.by(campo).ascending();
+        Page<ProductoResponseDTO> resultado = productoRepository
+                .findAll(PageRequest.of(pagina, tamanio, sort))
+                .map(this::convertirResponse);
+
+        return new PaginaResponseDTO<>(
+                resultado.getContent(),
+                resultado.getNumber(),
+                resultado.getSize(),
+                resultado.getTotalElements(),
+                resultado.getTotalPages(),
+                resultado.isFirst(),
+                resultado.isLast()
+        );
     }
 
     private Categoria buscarCategoria(Long categoriaId){
