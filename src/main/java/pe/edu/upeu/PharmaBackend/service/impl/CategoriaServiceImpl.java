@@ -67,7 +67,7 @@ public class CategoriaServiceImpl implements CategoriaService {
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(cacheNames = "categorias", key = "'id-' + #aLong")
+    @Cacheable(cacheNames = "categorias", key = "'id-' + #p0")
     public CategoriaResponseDTO read(Long aLong) {
         Categoria categoria = categoriaRepository.findById(aLong)
                 .orElseThrow(()->
