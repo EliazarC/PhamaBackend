@@ -37,6 +37,8 @@ logging:
   level:
     pe.edu.upeu.PharmaBackend: INFO
 app:
+  cors:
+    allowed-origins: ${FRONTEND_ORIGINS:http://localhost:8081}
   jwt:
     secret: ${JWT_SECRET}
     expiracion-minutos: ${JWT_EXPIRACION_MINUTOS:60}
