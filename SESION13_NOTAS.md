@@ -4,7 +4,7 @@
 - Dependencias de Spring Cache, Spring Data Redis y Actuator.
 - Redis configurable mediante REDIS_HOST y REDIS_PORT; TTL de 10 minutos.
 - CacheConfig registra advertencias si Redis falla para permitir que la operación continúe contra Oracle.
-- Caché e invalidación de categorías y productos.
+- Caché e invalidación de categorías y productos; el primer listado registra inicio, filas y `duracionMs`, mientras que el hit de Redis no entra al método ni ejecuta SQL.
 - Caché de productos por página, tamaño, orden y dirección; la API devuelve PaginaResponseDTO.
 - La caché de productos se invalida al crear, actualizar o eliminar productos, al modificar/eliminar categorías y al registrar ventas.
 - DTO de categorías, productos y páginas serializables para almacenarse en Redis.
@@ -47,7 +47,7 @@ Para iniciar en desarrollo:
 
 ## Validación pendiente con servicios reales
 - Confirmar que Oracle conecta con `jdbc:oracle:thin:@//localhost:1522/FREEPDB1`.
-- Ejecutar dos GET /api/v1/categorias seguidos y confirmar que el segundo no genera SQL.
+- Ejecutar dos GET /api/v1/categorias seguidos: el primero registra `Inicio listar categorias`, SQL y `Fin listar categorias | duracionMs`; el segundo no entra al método ni genera SQL. Para medir el tiempo de línea base en `develop`, usar también DevTools → Red, porque esa versión aún no tenía ese log.
 - Ejecutar dos GET /api/v1/productos con los mismos parámetros y verificar el hit de caché.
 - Probar que las escrituras invalidan las cachés correspondientes.
 - Apagar Redis, abrir Categorías y comprobar continuidad de Oracle, WARN y estado DOWN en /actuator/health.
