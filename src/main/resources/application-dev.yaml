@@ -4,7 +4,7 @@ spring:
   datasource:
     url: jdbc:oracle:thin:@//localhost:1522/FREEPDB1
     username: PHARMADB
-    password: ${DB_PASSWORD:1234567}
+    password: ${DB_PASSWORD}
     driver-class-name: oracle.jdbc.OracleDriver
   jpa:
     database-platform: org.hibernate.dialect.OracleDialect
@@ -26,6 +26,5 @@ logging:
     pe.edu.upeu.PharmaBackend: DEBUG
 app:
   jwt:
-    # Clave de desarrollo de 384 bits; cambiarla en cada entorno propio.
-    secret: w9Z6dP/dzykNH/uiI3Z/KGjBlP0H4Ji+Tuq4fm2cTNuLD4jWafu1gBL74V2SJEvy
+    secret: ${JWT_SECRET}
     expiracion-minutos: 60
