@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pe.edu.upeu.PharmaBackend.dto.VentaRequestDTO;
+import pe.edu.upeu.PharmaBackend.dto.PaginaResponseDTO;
 import pe.edu.upeu.PharmaBackend.dto.VentaResponseDTO;
 import pe.edu.upeu.PharmaBackend.enums.EstadoVenta;
 import pe.edu.upeu.PharmaBackend.service.service.VentaService;
@@ -57,7 +58,7 @@ public class VentaController {
 
 
     @GetMapping("/buscar")
-    public ResponseEntity<List<VentaResponseDTO>> buscar(
+    public ResponseEntity<PaginaResponseDTO<VentaResponseDTO>> buscar(
 
             @RequestParam(required = false)
             Long clienteId,
@@ -77,16 +78,14 @@ public class VentaController {
             String ordenarPor,
 
             @RequestParam(required = false, defaultValue = "desc")
-            String direccion) {
+            String direccion,
+
+            @RequestParam(defaultValue = "0") int pagina,
+            @RequestParam(defaultValue = "20") int tamanio) {
 
         return ResponseEntity.ok(
-                ventaService.buscarVentas(
-                        clienteId,
-                        estado,
-                        desde,
-                        hasta,
-                        ordenarPor,
-                        direccion
+                ventaService.buscarVentasPaginado(
+                        clienteId, estado, desde, hasta, ordenarPor, direccion, pagina, tamanio
                 )
         );
     }
