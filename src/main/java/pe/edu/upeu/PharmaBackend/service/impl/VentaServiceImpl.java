@@ -3,8 +3,14 @@ package pe.edu.upeu.PharmaBackend.service.impl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.transaction.annotation.Transactional;
+import pe.edu.upeu.PharmaBackend.auditoria.EventoAuditoria;
+import pe.edu.upeu.PharmaBackend.dto.PaginaResponseDTO;
 import pe.edu.upeu.PharmaBackend.dto.DetalleVentaRequestDTO;
 import pe.edu.upeu.PharmaBackend.dto.DetalleVentaResponseDTO;
 import pe.edu.upeu.PharmaBackend.dto.VentaRequestDTO;
@@ -20,6 +26,7 @@ import pe.edu.upeu.PharmaBackend.repository.ClienteRepository;
 import pe.edu.upeu.PharmaBackend.repository.ProductoRepository;
 import pe.edu.upeu.PharmaBackend.repository.VentaRepository;
 import pe.edu.upeu.PharmaBackend.service.service.VentaService;
+import pe.edu.upeu.PharmaBackend.util.PaginacionUtil;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -35,6 +42,7 @@ public class VentaServiceImpl implements VentaService {
     private final VentaRepository ventaRepository;
     private final ClienteRepository clienteRepository;
     private final ProductoRepository productoRepository;
+    private final ApplicationEventPublisher eventos;
 
     private static final Set<String> CAMPOS_ORDENABLES = Set.of("id", "fecha", "total", "estado");
     private static final String ORDEN_POR_DEFECTO = "fecha";
@@ -42,15 +50,18 @@ public class VentaServiceImpl implements VentaService {
     public VentaServiceImpl(
             VentaRepository ventaRepository,
             ClienteRepository clienteRepository,
-            ProductoRepository productoRepository) {
+            ProductoRepository productoRepository,
+            ApplicationEventPublisher eventos) {
 
         this.ventaRepository = ventaRepository;
         this.clienteRepository = clienteRepository;
         this.productoRepository = productoRepository;
+        this.eventos = eventos;
     }
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = "productos", allEntries = true)
     public VentaResponseDTO registrar(VentaRequestDTO request) {
         Cliente cliente = clienteRepository.findById(request.getClienteId())
                 .orElseThrow(() ->new RecursosNoEncontradoException("Cliente no encontrado con id: "+ request.getClienteId()));
@@ -98,7 +109,9 @@ public class VentaServiceImpl implements VentaService {
 
         venta.setTotal(total);
 
-        Venta guardada =ventaRepository.save(venta);
+        Venta guardada = ventaRepository.save(venta);
+        eventos.publishEvent(EventoAuditoria.de("VENTA_REGISTRADA", "Venta", guardada.getId(),
+                "total=" + guardada.getTotal() + " | items=" + guardada.getDetalles().size()));
 
         return convertirResponse(guardada);
     }
@@ -116,6 +129,29 @@ public class VentaServiceImpl implements VentaService {
     @Transactional(readOnly = true)
     public List<VentaResponseDTO> listar() {
         return ventaRepository.findAll().stream().map(this::convertirResponse).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PaginaResponseDTO<VentaResponseDTO> buscarVentasPaginado(
+            Long clienteId, EstadoVenta estado, LocalDate desde, LocalDate hasta,
+            String ordenarPor, String direccion, int pagina, int tamanio) {
+        if (desde != null && hasta != null && desde.isAfter(hasta)) {
+            throw new ReglaNegocioException("El rango de fechas es inválido: desde es posterior a hasta");
+        }
+
+        String campo = (ordenarPor == null || ordenarPor.isBlank()) ? "fecha" : ordenarPor.trim();
+        String campoEntidad = campo.equals("fecha") ? "fechaRegistro" : campo;
+        Pageable pageable = PaginacionUtil.construir(pagina, tamanio, campoEntidad, direccion,
+                Set.of("id", "fechaRegistro", "total", "estado"), "fechaRegistro");
+
+        LocalDateTime desdeHora = desde == null ? null : desde.atStartOfDay();
+        LocalDateTime hastaExclusiva = hasta == null ? null : hasta.plusDays(1).atStartOfDay();
+
+        Page<VentaResponseDTO> resultado = ventaRepository
+                .buscarPagina(clienteId, estado, desdeHora, hastaExclusiva, pageable)
+                .map(this::convertirResponse);
+        return PaginaResponseDTO.de(resultado);
     }
 
     @Override
@@ -233,7 +269,8 @@ public class VentaServiceImpl implements VentaService {
                 clienteNombre,
                 venta.getEstado().name(),
                 venta.getTotal(),
-                detalles
+                detalles,
+                venta.getCreadoPor()
         );
     }
 

@@ -3,6 +3,10 @@ package pe.edu.upeu.PharmaBackend.service.impl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.context.ApplicationEventPublisher;
+import pe.edu.upeu.PharmaBackend.auditoria.EventoAuditoria;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.transaction.annotation.Transactional;
 import pe.edu.upeu.PharmaBackend.dto.CategoriaRequestDTO;
 import pe.edu.upeu.PharmaBackend.dto.CategoriaResponseDTO;
@@ -12,20 +16,23 @@ import pe.edu.upeu.PharmaBackend.exception.ReglaNegocioException;
 import pe.edu.upeu.PharmaBackend.repository.CategoriaRepository;
 import pe.edu.upeu.PharmaBackend.service.service.CategoriaService;
 
-import java.util.Optional;
+import java.util.List;
 
 @Service
 public class CategoriaServiceImpl implements CategoriaService {
     private static final Logger LOG = LoggerFactory.getLogger(CategoriaServiceImpl.class);
 
     private final CategoriaRepository categoriaRepository;
+    private final ApplicationEventPublisher eventos;
 
-    public CategoriaServiceImpl(CategoriaRepository categoriaRepository) {
+    public CategoriaServiceImpl(CategoriaRepository categoriaRepository, ApplicationEventPublisher eventos) {
         this.categoriaRepository = categoriaRepository;
+        this.eventos = eventos;
     }
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = "categorias", allEntries = true)
     public CategoriaResponseDTO create(CategoriaRequestDTO t) {
         String nombre = t.getNombre().trim();
         if(categoriaRepository.existsByNombreIgnoreCase(nombre)){
@@ -40,12 +47,14 @@ public class CategoriaServiceImpl implements CategoriaService {
         categoria.setEstado(t.getEstado());
 
         Categoria catCreada = categoriaRepository.save(categoria);
+        eventos.publishEvent(EventoAuditoria.de("CATEGORIA_CREADA", "Categoria", catCreada.getId(), null));
 
         return convertirResponse(catCreada);
     }
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = {"categorias", "productos"}, allEntries = true)
     public CategoriaResponseDTO update(Long aLong, CategoriaRequestDTO t) {
         Categoria categoria = categoriaRepository.findById(aLong).orElseThrow(()->
                 new RecursosNoEncontradoException(
@@ -57,12 +66,14 @@ public class CategoriaServiceImpl implements CategoriaService {
         categoria.setEstado(t.getEstado());
 
         Categoria catActualizada = categoriaRepository.save(categoria);
+        eventos.publishEvent(EventoAuditoria.de("CATEGORIA_MODIFICADA", "Categoria", catActualizada.getId(), null));
 
         return convertirResponse(catActualizada);
     }
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = "categorias", key = "'id-' + #p0")
     public CategoriaResponseDTO read(Long aLong) {
         Categoria categoria = categoriaRepository.findById(aLong)
                 .orElseThrow(()->
@@ -75,22 +86,32 @@ public class CategoriaServiceImpl implements CategoriaService {
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = {"categorias", "productos"}, allEntries = true)
     public void delete(Long aLong) {
         Categoria categoria = categoriaRepository.findById(aLong).orElseThrow(()->
                 new RecursosNoEncontradoException(
                         "Categoria no encontrada con id: "+ aLong
                 )
         );
+        eventos.publishEvent(EventoAuditoria.de("CATEGORIA_ELIMINADA", "Categoria", categoria.getId(), null));
         categoriaRepository.delete(categoria);
     }
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = "categorias", key = "'todas'")
     public Iterable<CategoriaResponseDTO> readAll() {
-        return categoriaRepository.findAll()
+        long inicio = System.currentTimeMillis();
+        LOG.info("Inicio listar categorias");
+
+        List<CategoriaResponseDTO> resultado = categoriaRepository.findAll()
                 .stream()
                 .map(this::convertirResponse)
                 .toList();
+
+        LOG.info("Fin listar categorias | filas={} | duracionMs={}",
+                resultado.size(), System.currentTimeMillis() - inicio);
+        return resultado;
     }
 
     private CategoriaResponseDTO convertirResponse(Categoria categoria){
@@ -100,7 +121,9 @@ public class CategoriaServiceImpl implements CategoriaService {
                 categoria.getDescripcion(),
                 categoria.getEstado(),
                 categoria.getFechaCreacion(),
-                categoria.getFechaModificacion()
+                categoria.getFechaModificacion(),
+                categoria.getCreadoPor(),
+                categoria.getModificadoPor()
         );
     }
 }

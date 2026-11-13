@@ -1,0 +1,26 @@
+name: Compilación Backend
+
+on:
+  push:
+    branches:
+      - feature/integracion-estabilizacion-cauna
+  pull_request:
+    branches:
+      - develop
+
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v4
+      - name: Configurar Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Permitir ejecutar Maven Wrapper
+        run: chmod +x ./mvnw
+      - name: Compilar backend
+        run: ./mvnw -B -DskipTests package
