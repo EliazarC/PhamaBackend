@@ -14,6 +14,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import pe.edu.upeu.PharmaBackend.dto.auth.*;
+import pe.edu.upeu.PharmaBackend.auditoria.EventoAuditoria;
+import pe.edu.upeu.PharmaBackend.service.service.AuditoriaService;
 import pe.edu.upeu.PharmaBackend.dto.usuario.*;
 import pe.edu.upeu.PharmaBackend.entity.*;
 import pe.edu.upeu.PharmaBackend.repository.*;
@@ -34,6 +36,7 @@ public class SeguridadService {
  private final RolRepository roles;
  private final PasswordEncoder encoder;
  private final JwtService jwt;
+ private final AuditoriaService auditoriaService;
 
  public SeguridadService(
          AuthenticationManager am,
@@ -41,7 +44,8 @@ public class SeguridadService {
          EmpleadoRepository e,
          RolRepository r,
          PasswordEncoder p,
-         JwtService j) {
+         JwtService j,
+         AuditoriaService auditoriaService) {
 
   this.authManager = am;
   this.usuarios = u;
@@ -49,6 +53,7 @@ public class SeguridadService {
   this.roles = r;
   this.encoder = p;
   this.jwt = j;
+  this.auditoriaService = auditoriaService;
  }
 
  // Iniciar sesión y generar el token JWT
@@ -75,7 +80,7 @@ public class SeguridadService {
                    )
            );
 
-   return new LoginResponseDTO(
+   LoginResponseDTO respuesta = new LoginResponseDTO(
            jwt.generarToken(details),
            "Bearer",
            jwt.getExpiracionSegundos(),
@@ -87,11 +92,22 @@ public class SeguridadService {
                    .toList(),
            PermisosPorRol.permisos(u.getRoles())
    );
+   registrarEventoLogin(EventoAuditoria.login("LOGIN_EXITOSO", username));
+   return respuesta;
 
   } catch (AuthenticationException ex) {
+   registrarEventoLogin(EventoAuditoria.login("LOGIN_FALLIDO", username));
    throw new BadCredentialsException(
            "Usuario o contraseña incorrectos"
    );
+  }
+ }
+
+ private void registrarEventoLogin(EventoAuditoria evento) {
+  try {
+   auditoriaService.registrar(evento);
+  } catch (RuntimeException ex) {
+   // Un fallo al escribir la bitácora no debe bloquear el inicio de sesión.
   }
  }
 
