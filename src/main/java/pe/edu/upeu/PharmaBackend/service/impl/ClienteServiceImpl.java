@@ -3,6 +3,8 @@ package pe.edu.upeu.PharmaBackend.service.impl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.context.ApplicationEventPublisher;
+import pe.edu.upeu.PharmaBackend.auditoria.EventoAuditoria;
 import org.springframework.transaction.annotation.Transactional;
 import pe.edu.upeu.PharmaBackend.dto.ClienteRequestDTO;
 import pe.edu.upeu.PharmaBackend.dto.ClienteResponseDTO;
@@ -22,10 +24,12 @@ public class ClienteServiceImpl
             LoggerFactory.getLogger(ClienteServiceImpl.class);
 
     private final ClienteRepository clienteRepository;
+    private final ApplicationEventPublisher eventos;
 
     public ClienteServiceImpl(
-            ClienteRepository clienteRepository) {
+            ClienteRepository clienteRepository, ApplicationEventPublisher eventos) {
         this.clienteRepository = clienteRepository;
+        this.eventos = eventos;
     }
 
     @Override
@@ -77,6 +81,7 @@ public class ClienteServiceImpl
 
         Cliente guardado =
                 clienteRepository.save(cliente);
+        eventos.publishEvent(EventoAuditoria.de("CLIENTE_CREADO", "Cliente", guardado.getId(), null));
 
         log.info(
                 "Cliente registrado correctamente id={}",
@@ -174,6 +179,7 @@ public class ClienteServiceImpl
 
         Cliente actualizado =
                 clienteRepository.save(cliente);
+        eventos.publishEvent(EventoAuditoria.de("CLIENTE_MODIFICADO", "Cliente", actualizado.getId(), null));
 
         log.info(
                 "Cliente id={} actualizado correctamente",
@@ -195,6 +201,7 @@ public class ClienteServiceImpl
                                 )
                         );
 
+        eventos.publishEvent(EventoAuditoria.de("CLIENTE_ELIMINADO", "Cliente", cliente.getId(), null));
         clienteRepository.delete(cliente);
 
         log.info(
@@ -216,7 +223,9 @@ public class ClienteServiceImpl
                 cliente.getDireccion(),
                 cliente.getEstado(),
                 cliente.getFechaCreacion(),
-                cliente.getFechaModificacion()
+                cliente.getFechaModificacion(),
+                cliente.getCreadoPor(),
+                cliente.getModificadoPor()
         );
     }
 
