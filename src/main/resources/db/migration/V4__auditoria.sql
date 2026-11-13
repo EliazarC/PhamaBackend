@@ -36,3 +36,5 @@ create table auditoria_eventos (
 create index ix_auditoria_fecha on auditoria_eventos (fecha);
 create index ix_auditoria_usuario on auditoria_eventos (usuario, fecha);
 create index ix_productos_nombre on productos (nombre);
+
+create index ix_ventas_fecha_estado on ventas (fecha_registro, estado, cliente_id);
