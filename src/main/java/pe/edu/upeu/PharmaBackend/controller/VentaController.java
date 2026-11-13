@@ -12,7 +12,6 @@ import pe.edu.upeu.PharmaBackend.enums.EstadoVenta;
 import pe.edu.upeu.PharmaBackend.service.service.VentaService;
 
 import java.time.LocalDate;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/ventas")
@@ -49,11 +48,13 @@ public class VentaController {
     }
 
     @GetMapping
-    public ResponseEntity<List<VentaResponseDTO>> listar() {
-
-        return ResponseEntity.ok(
-                ventaService.listar()
-        );
+    public ResponseEntity<PaginaResponseDTO<VentaResponseDTO>> listar(
+            @RequestParam(defaultValue = "0") int pagina,
+            @RequestParam(defaultValue = "20") int tamanio,
+            @RequestParam(defaultValue = "fecha") String ordenarPor,
+            @RequestParam(defaultValue = "desc") String direccion) {
+        return ResponseEntity.ok(ventaService.buscarVentasPaginado(
+                null, null, null, null, ordenarPor, direccion, pagina, tamanio));
     }
 
 
