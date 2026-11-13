@@ -10,7 +10,7 @@ select
     'Producto de prueba ' || lpad(level, 5, '0'),
     round(dbms_random.value(1, 200), 2),
     trunc(dbms_random.value(0, 500)),
-    1,
+    true,
     (select min(id) from categorias),
     systimestamp,
     'carga'
