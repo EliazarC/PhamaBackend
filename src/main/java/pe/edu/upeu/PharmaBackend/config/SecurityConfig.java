@@ -77,7 +77,7 @@ public class SecurityConfig {
                   .requestMatchers("/actuator/**").hasAuthority("USUARIOS_ADMINISTRAR")
                   .requestMatchers("/api/v1/auth/password").authenticated()
                   .requestMatchers("/api/v1/auth/me").authenticated()
-                  .requestMatchers("/api/v1/empleados/**", "/api/v1/roles/**", "/api/v1/usuarios/**").hasAuthority("USUARIOS_ADMINISTRAR")
+                  .requestMatchers("/api/v1/empleados/**", "/api/v1/roles/**", "/api/v1/usuarios/**", "/api/v1/auditoria/**").hasAuthority("USUARIOS_ADMINISTRAR")
                   .requestMatchers(HttpMethod.GET, "/api/v1/categorias/**", "/api/v1/productos/**").hasAuthority("CATALOGO_LEER")
                   .requestMatchers("/api/v1/categorias/**", "/api/v1/productos/**").hasAuthority("CATALOGO_ESCRIBIR")
                   .requestMatchers(HttpMethod.GET, "/api/v1/clientes/**").hasAuthority("CLIENTES_LEER")
