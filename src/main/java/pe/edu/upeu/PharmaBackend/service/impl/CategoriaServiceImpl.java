@@ -3,6 +3,8 @@ package pe.edu.upeu.PharmaBackend.service.impl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.context.ApplicationEventPublisher;
+import pe.edu.upeu.PharmaBackend.auditoria.EventoAuditoria;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,9 +23,11 @@ public class CategoriaServiceImpl implements CategoriaService {
     private static final Logger LOG = LoggerFactory.getLogger(CategoriaServiceImpl.class);
 
     private final CategoriaRepository categoriaRepository;
+    private final ApplicationEventPublisher eventos;
 
-    public CategoriaServiceImpl(CategoriaRepository categoriaRepository) {
+    public CategoriaServiceImpl(CategoriaRepository categoriaRepository, ApplicationEventPublisher eventos) {
         this.categoriaRepository = categoriaRepository;
+        this.eventos = eventos;
     }
 
     @Override
@@ -43,6 +47,7 @@ public class CategoriaServiceImpl implements CategoriaService {
         categoria.setEstado(t.getEstado());
 
         Categoria catCreada = categoriaRepository.save(categoria);
+        eventos.publishEvent(EventoAuditoria.de("CATEGORIA_CREADA", "Categoria", catCreada.getId(), null));
 
         return convertirResponse(catCreada);
     }
@@ -61,6 +66,7 @@ public class CategoriaServiceImpl implements CategoriaService {
         categoria.setEstado(t.getEstado());
 
         Categoria catActualizada = categoriaRepository.save(categoria);
+        eventos.publishEvent(EventoAuditoria.de("CATEGORIA_MODIFICADA", "Categoria", catActualizada.getId(), null));
 
         return convertirResponse(catActualizada);
     }
@@ -87,6 +93,7 @@ public class CategoriaServiceImpl implements CategoriaService {
                         "Categoria no encontrada con id: "+ aLong
                 )
         );
+        eventos.publishEvent(EventoAuditoria.de("CATEGORIA_ELIMINADA", "Categoria", categoria.getId(), null));
         categoriaRepository.delete(categoria);
     }
 
