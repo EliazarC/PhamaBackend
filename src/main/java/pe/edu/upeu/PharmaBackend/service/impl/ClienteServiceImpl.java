@@ -216,7 +216,9 @@ public class ClienteServiceImpl
                 cliente.getDireccion(),
                 cliente.getEstado(),
                 cliente.getFechaCreacion(),
-                cliente.getFechaModificacion()
+                cliente.getFechaModificacion(),
+                cliente.getCreadoPor(),
+                cliente.getModificadoPor()
         );
     }
 
